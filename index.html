@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REACTION DOTS</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #101018;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  overflow: hidden;
+}
+h1 { color: #59d9ff; letter-spacing: 3px; }
+.screen { display: none; padding: 25px 15px; }
+.screen.active { display: block; }
+button {
+  border: 1px solid #59d9ff;
+  background: #202638;
+  color: white;
+  padding: 16px;
+  margin: 10px auto;
+  width: 85%;
+  max-width: 320px;
+  border-radius: 12px;
+  font-size: 18px;
+}
+button:active { background: #17617d; }
+#arena {
+  position: relative;
+  height: 65vh;
+  margin-top: 15px;
+  background: #171c2b;
+  border: 1px solid #35445d;
+  border-radius: 15px;
+  overflow: hidden;
+}
+.dot {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #50e5ff;
+  box-shadow: 0 0 15px #50e5ff;
+  transform: translate(-50%, -50%);
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 25px;
+}
+#timer { font-size: 48px; color: #59d9ff; }
+input { width: 80%; accent-color: #59d9ff; }
+</style>
+</head>
+<body>
+
+<div id="home" class="screen active">
+  <h1>REACTION DOTS</h1>
+  <p>Перевір свою реакцію!</p>
+  <button onclick="startGame()">СТАРТ</button>
+  <button onclick="showSettings()">НАЛАШТУВАННЯ</button>
+  <button onclick="exitGame()">ВИХІД</button>
+</div>
+
+<div id="settings" class="screen">
+  <h1>НАЛАШТУВАННЯ</h1>
+  <h3>Складність: <span id="levelText">1</span></h3>
+  <input type="range" min="1" max="10" value="1"
+  id="level" oninput="updateLevel()">
+  <p>Кількість крапочок: <span id="dotCount">3</span></p>
+  <button onclick="showScreen('home')">НАЗАД</button>
+</div>
+
+<div id="game" class="screen">
+  <h2>Раунд: <span id="round">1</span></h2>
+  <p>Залишилось крапочок: <span id="remaining">3</span></p>
+  <div id="timer">3</div>
+  <div id="arena"></div>
+  <button onclick="showScreen('home')">ВИЙТИ З ГРИ</button>
+</div>
+
+<script>
+let difficulty = 1;
+let round = 1;
+let remaining = 0;
+let countdown;
+let running = false;
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s =>
+    s.classList.remove('active')
+  );
+  document.getElementById(id).classList.add('active');
+}
+
+function showSettings() {
+  showScreen('settings');
+}
+
+function updateLevel() {
+  difficulty = Number(document.getElementById('level').value);
+  document.getElementById('levelText').textContent = difficulty;
+  document.getElementById('dotCount').textContent = getDotCount();
+}
+
+function getDotCount() {
+  return Math.round(3 + (difficulty - 1) * 12 / 9);
+}
+
+function startGame() {
+  round = 1;
+  running = true;
+  showScreen('game');
+  nextRound();
+}
+
+function nextRound() {
+  if (!running) return;
+
+  document.getElementById('round').textContent = round;
+  const arena = document.getElementById('arena');
+  arena.innerHTML = '';
+
+  let seconds = 3;
+  document.getElementById('timer').textContent = seconds;
+
+  clearInterval(countdown);
+  countdown = setInterval(() => {
+    if (!running) {
+      clearInterval(countdown);
+      return;
+    }
+    seconds--;
+    document.getElementById('timer').textContent = seconds;
+
+    if (seconds <= 0) {
+      clearInterval(countdown);
+      showDots();
+    }
+  }, 1000);
+}
+
+function showDots() {
+  if (!running) return;
+
+  const arena = document.getElementById('arena');
+  arena.innerHTML = '';
+  document.getElementById('timer').textContent = 'GO!';
+
+  remaining = getDotCount();
+  document.getElementById('remaining').textContent = remaining;
+
+  const rect = arena.getBoundingClientRect();
+
+  for (let i = 0; i < remaining; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'dot';
+
+    const x = 18 + Math.random() * (rect.width - 36);
+    const y = 18 + Math.random() * (rect.height - 36);
+
+    dot.style.left = x + 'px';
+    dot.style.top = y + 'px';
+
+    dot.onclick = () => {
+      if (!running || !dot.isConnected) return;
+      dot.remove();
+      remaining--;
+      document.getElementById('remaining').textContent = remaining;
+
+      if (remaining === 0) {
+        round++;
+        setTimeout(nextRound, 500);
+      }
+    };
+
+    arena.appendChild(dot);
+  }
+}
+
+function exitGame() {
+  running = false;
+  clearInterval(countdown);
+  showScreen('home');
+}
+</script>
+</body>
+</html>
